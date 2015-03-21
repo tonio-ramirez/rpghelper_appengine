@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Chat{% endblock title %}
+
+{% block head %}
+<script type="text/javascript" src="/_ah/channel/jsapi"></script>
+<script type="text/javascript">
+var channel;
+var socket;
+
+function setCookie(name, value, days) {
+    var expires;
+    if (days) {
+        var date = new Date();
+        if (days > 0) {
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        } else {
+            date.setTime(date.getTime() + (-days * 60 * 60 * 1000))
+        }
+        expires = "; expires=" + date.toGMTString();
+    }
+    else expires = "";
+    document.cookie = name + "=" + value + expires + "; path=/";
+}
+
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return "";
+}
+
+function deleteCookie(name) {
+    setCookie(name, "", -1);
+}
+function validMessage(s) {
+    return s.length > 0;
+}
+
+function setButtonEnabled(button, enabled) {
+    button.disabled = !enabled;
+}
+
+function validate(field, button) {
+    setButtonEnabled(button, validMessage(field.value));
+}
+
+google.load("jquery", "1");
+google.load("jqueryui", "1");
+
+function checkForNewMessages() {
+    $.get('/chat/check', function(pending) {
+        if (pending == 'yes') {
+            $("#favicon").attr("href", "/images/favicon_new.ico");
+            setTimeout('checkForNewMessages()', 60000);
+            $("#new_message_notification").show('fade', 2500);
+            reposition("#new_message_notification", "right bottom", "-10 -10");
+        } else {
+            $("#favicon").attr("href", "/images/favicon.ico");
+            setTimeout('checkForNewMessages()', 5000);
+            $("#new_message_notification").hide('fade', 2500);
+        }
+    });
+}
+
+function showReloadMessagesPanel(show) {
+    if (show === undefined || show) {
+        $("#favicon").attr("href", "/images/favicon_new.ico");
+        $("#new_message_notification").show('fade', 2500);
+        reposition("#new_message_notification", "right bottom", "-10 -10");
+    } else {
+        $("#favicon").attr("href", "/images/favicon.ico");
+        $("#new_message_notification").hide('fade', 2500);
+    }
+}
+
+function reposition(selector, position, offset) {
+    $(selector).position({
+        my: position,
+        at: position,
+        offset: offset,
+        of: window
+    });
+}
+
+function requestNewChannel() {
+    $.get('/chat/new_token', {"campaign": '{{ campaign.key.id }}'}, success = function(response) {
+        response = $.parseJSON(response);
+        if (response["new_token"] && response["client_id"]) {
+            openChannel(response["new_token"]);
+            setCookie("token", response["new_token"], -2);
+            setCookie("client_id", response["client_id"], 14);
+        } else if (response["error"]) {
+            alert("Error requesting token:\n" + response["error"]);
+        } else {
+            alert("No token or client id received!");
+        }
+    });
+}
+
+function openChannel(token) {
+    channel = new goog.appengine.Channel(token);
+    socket = channel.open();
+    //socket.onopen = onOpened;
+//    socket.onerror = requestNewChannel;
+    socket.onmessage = onMessage;
+    socket.onclose = requestNewChannel;
+}
+
+function showNotification() {
+    notificationShowing = true;
+    var notification = window.webkitNotifications.createNotification(
+            '/images/favicon.ico', 'RPG Helper', 'You have new chat messages!\n\rClick here to view them.');
+    notification.onerror = function() {
+        showReloadMessagesPanel(undefined);
+    };
+    notification.onclick = function() {
+        window.focus();
+        reloadChat(undefined);
+        showReloadMessagesPanel(false);
+        notification.cancel();
+    };
+
+    notification.onclose = function() {
+        notificationShowing = false;
+    };
+
+    notification.show();
+}
+var notificationShowing = false;
+
+function onMessage(message) {
+    var response = $.parseJSON(message.data);
+    var shouldShow = response["new_messages"] && response["from"] != '{{ current_user }}';
+    if (shouldShow && window.webkitNotifications && window.webkitNotifications.checkPermission() == 0) {
+        if (!notificationShowing) {
+            showNotification();
+        }
+    }
+    showReloadMessagesPanel(shouldShow);
+}
+
+function validateChannel() {
+    if (getCookie("token")) {
+        $.get('/chat/validate_client_id', {"campaign":'{{ campaign.key.id }}'}, success = function(response) {
+            response = $.parseJSON(response);
+            if (response["valid"]) {
+                openChannel(getCookie("token"));
+            } else {
+                requestNewChannel();
+            }
+        });
+    } else {
+        requestNewChannel();
+    }
+}
+
+var xcolor = "black";
+
+function xpuls() {
+    if (xcolor == "red") xcolor = "black";
+    else xcolor = "red";
+    $(".maxroll").animate({color:xcolor}, "normal", "swing", xpuls);
+}
+
+var ncolor = "black";
+
+function npuls() {
+    if (ncolor == "blue") ncolor = "black";
+    else ncolor = "blue";
+    $(".minroll").animate({color:ncolor}, "normal", "swing", npuls);
+}
+
+function createRollString(roll) {
+    var roll_string = '[<span class="chatroll">' + roll.total + '</span> (<span class="chatrolldetail">';
+    roll_string += roll.description + ': ';
+    for (var di = 0; di < roll.rolls.length; di++) {
+        roll_string += (di != 0 ? ', ' : '') + roll.rolls[di];
+    }
+    roll_string += '</span>)]';
+    return roll_string;
+}
+
+function formatDate(date) {
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    if (month < 10) month = '0' + month;
+    var day = date.getDate();
+    if (day < 10) day = '0' + day;
+    var hour = date.getHours();
+    var ap = hour > 11 ? 'PM' : 'AM';
+    hour %= 12;
+    if (hour == 0) hour = 12;
+    if (hour < 10) hour = '0' + hour;
+    var minutes = date.getMinutes();
+    if (minutes < 10) minutes = '0' + minutes;
+    return year + '-' + month + '-' + day + ' ' +
+            hour + ':' + minutes + ' ' + ap;
+
+}
+
+function isRollMax(roll) {
+    if (roll.campaign.type == 'Champions') {
+        return roll.description == '3d6' && roll.total == 18;
+    } else if (roll.campaign.type == 'D&D') {
+        return roll.rolls.length == 1 && roll.die_faces == 20 && !roll.half && roll.rolls[0] == 20;
+    } else {
+        return false;
+    }
+}
+
+function isRollMin(roll) {
+    if (roll.campaign.type == 'Champions') {
+        return roll.description == '3d6' && roll.total == 3;
+    } else if (roll.campaign.type == 'D&D') {
+        return roll.rolls.length == 1 && roll.die_faces == 20 && !roll.half && roll.rolls[0] == 1;
+    } else {
+        return false;
+    }
+}
+
+function reloadChat(bookmark) {
+    var showLoading = setTimeout(function() {
+        $('#allchat').html('<p style="font-weight: bold;"><img src="/images/ajax-loader.gif"/> Loading...</p>');
+    }, 500);
+    $('html').addClass('waiting');
+    $('.chatnav').unbind('click').removeClass("pseudolink");
+
+    $.ajax({
+        url:'/chat/load_messages',
+        dataType:'json',
+        data: {"bookmark":bookmark},
+        success: function(response) {
+            $('html').removeClass('waiting');
+            clearTimeout(showLoading);
+
+            $('#allchat').html('');
+            for (var i = 0; i < response.messages.length; i++) {
+                var message = response.messages[i];
+                var rolls = response.all_rolls[i];
+                var message_text = '';
+                var current = 0;
+                var addMax = false;
+                var addMin = false;
+                for (var ri = 0; ri < rolls.length; ri++) {
+                    var roll = rolls[ri];
+                    message_text += message.message.substring(current, roll.match_start);
+                    message_text += createRollString(roll);
+                    current = roll.match_end;
+                    if (isRollMax(roll)) {
+                        addMax = true;
+                    }
+                    if (isRollMin(roll)) {
+                        addMin = true;
+                    }
+                }
+                message_text += message.message.substring(current);
+
+                var messageDate = new Date(Date.UTC(
+                        message.stamp.timetuple[0],
+                        message.stamp.timetuple[1] - 1, // python dates are 1-based, javascript are 0-based
+                        message.stamp.timetuple[2],
+                        message.stamp.timetuple[3],
+                        message.stamp.timetuple[4],
+                        message.stamp.timetuple[5],
+                        message.stamp.timetuple[6]));
+                var content = $('<div/>').append(
+                        $('<div/>').addClass('rollmeta').append(
+                                $('<span/>').addClass('timestamp').html(formatDate(messageDate) + ': ')
+                                ).append(
+                                $('<span/>').addClass('user').html(message.user ? message.user.nickname : 'Someone')
+                                )).append(
+                        $('<div/>').addClass('chatdata').html(message_text)
+                        );
+                if (addMax) {
+                    content.append(
+                            $('<p/>').addClass('maxroll').html('MAXIMUM ROLL!!!')
+                                    .append($('<br/>'))
+                                    .append($('<img>', {
+                                src: "/images/qed.jpg",
+                                title: "El que baile con Chech&eacute; vivir&aacute; para contarlo."
+                            }))
+                            );
+                }
+                if (addMin) {
+                    content.append(
+                            $('<p/>').addClass('minroll').html('MINIMUM ROLL!!!')
+                                    .append($('<br/>'))
+                                    .append($('<img>', {
+                                src: "/images/qed.jpg",
+                                title: "El que baile con Chech&eacute; vivir&aacute; para contarlo."
+                            }))
+                            );
+                }
+                content.appendTo('#allchat');
+            }
+
+            if (response.prev) {
+                $('.newer').click(
+                        function(event) {
+                            event.preventDefault();
+                            reloadChat(response.prev);
+                        }).addClass("pseudolink");
+
+                $('.newest').click(
+                        function(event) {
+                            event.preventDefault();
+                            reloadChat(undefined);
+                        }).addClass("pseudolink");
+            }
+
+            if (response.next) {
+                $('.older').click(
+                        function(event) {
+                            event.preventDefault();
+                            reloadChat(response.next);
+                        }).addClass("pseudolink");
+            }
+            $(".maxroll").animate({color:xcolor}, "normal", "swing", xpuls);
+            $(".minroll").animate({color:ncolor}, "normal", "swing", npuls);
+        },
+        error: function(response) {
+            $('html').removeClass('waiting');
+            $('#allchat').html('<div class="error">Error loading messages.</div>');
+        }
+    });
+}
+
+function OnLoad() {
+    validate($('#message').get(0), $('#postbutton').get(0));
+//        setTimeout('checkForNewMessages()', 5000);
+
+    function reposition_noti() {
+        reposition("#new_message_notification", "right bottom", "-10 -10");
+    }
+
+    $(window).scroll(reposition_noti);
+    $(window).resize(reposition_noti);
+
+    $('#postbutton').click(function (event) {
+        setButtonEnabled($('#postbutton').get(0), false);
+        if ($('#message').val().length > 0) {
+            $.post('/chat/post', {'message':$('#message').val()}, success = function(response) {
+                response = $.parseJSON(response);
+                if (response.success) {
+                    reloadChat(undefined);
+                    $('#message').val('');
+                    validate($('#message').get(0), $('#postbutton').get(0));
+                }
+            });
+        }
+    });
+
+    validateChannel();
+    reloadChat(undefined);
+}
+
+google.setOnLoadCallback(OnLoad);
+</script>{% endblock %}
+
+{% block headername %}Chat{% if campaign_name %} - {{ campaign_name }}{% endif %}{% endblock headername %}
+
+{% block content %}
+<div>
+    <table>
+        <tr>
+            <td>Message:</td>
+        </tr>
+        <tr>
+            <td><textarea id="message" onkeyup="validate(this,$('#postbutton').get(0))" cols="40"
+                          rows="10"></textarea></td>
+            <td style="vertical-align: top;">
+                {% if campaign_type == "Champions" %}
+                To hit: [3d6].  Roll hits DCV = 11 + OCV - roll
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td align="right"><input type="button" value="Send" id="postbutton"></td>
+            <td>&nbsp;</td>
+        </tr>
+    </table>
+</div>
+<hr>
+<p><span class="chatnav newest">&lt;&lt; Newest</span>
+    &nbsp;&nbsp;
+    <span class="chatnav newer">&lt; Newer</span>
+    &nbsp;&nbsp;
+    <span class="chatnav older">Older &gt;</span></p>
+<div id="allchat">
+    <p style="font-weight: bold;"><img src="/images/ajax-loader.gif"/> Loading...</p>
+</div>
+<div id="new_message_notification"
+     style="display: none; padding: 10px; position:absolute;width:300px; height:50px; background-color:#daa520;color:blue;border:1px blue dotted;">
+    There are new messages!<br/>
+    <a href="javascript:reloadChat(undefined); showReloadMessagesPanel(false);">Reload</a>
+</div>
+<p><span class="chatnav newest">&lt;&lt; Newest</span>
+    &nbsp;&nbsp;
+    <span class="chatnav newer">&lt; Newer</span>
+    &nbsp;&nbsp;
+    <span class="chatnav older">Older &gt;</span></p>
+{% endblock content %}

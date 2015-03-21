@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Dice Roller{% endblock title %}
+
+{% block head %}<script type="text/javascript">
+	function validDiceString(s) {
+        var re = new RegExp('^([0-9]+)(\\.5)?[dD]([0-9]+)([+-][0-9]+)?$');
+		return s.match(re);
+	}
+     
+   	function setButtonEnabled(button, enabled) {
+		button.disabled = !enabled;
+   	}
+
+   	function validate(field, button) {
+       	setButtonEnabled(button, validDiceString(field.value));
+   	}
+</script>{% endblock %}
+
+{% block onload %}validate(document.diceInfo.description, document.diceInfo.rollbutton){% endblock onload %}
+
+{% block headername %}Dice Roller{% endblock headername %}
+
+{% block content %}
+	<form action="/dice/roll" method="post" name="diceInfo" id="diceInfo">
+		<table>
+			<tr>
+				<td>Dice:</td><td><input type="text" name="description" onkeyup="validate(this,document.diceInfo.rollbutton)"></td>
+			</tr><tr>
+				<td>Use:</td><td><input type="text" name="use"></td>
+			</tr><tr>
+				<td colspan="2" align="right"><input type="submit" value="Roll" name="rollbutton"></td>
+			</tr>
+		</table>
+	</form>
+	<hr>
+        <div>
+            <form action="/dice" method="post" name="pagination">
+                <input type="hidden" id="bookmark" name="bookmark" value="{{ prev }}"/>
+                {% if prev %}
+                    <a href="javascript:document.pagination.bookmark.value = '{{ prev }}'; document.pagination.submit()">Newer</a>
+                {% else %}
+                    Newer
+                {% endif %}
+                {% if next %}
+                    <a href="javascript:document.pagination.bookmark.value = '{{ next }}'; document.pagination.submit()">Older</a>
+                {% else %}
+                    Older
+                {% endif %}
+            </form>
+        </div>
+	{% for roll in rolls %}
+      	<div class="rollmeta"><span class="timestamp">{{ roll.stamp|date:"Y-m-d h:i A" }}:</span>
+      	<span class="user">
+          {% if roll.user %}
+              {{ roll.user.nickname }}
+          {% else %}
+              Someone
+          {% endif %}</span> - 
+          <span class="rolluse">{{ roll.use }}</span></div>
+          <div class="rolldata"><span class="rolldescription">{{ roll.description }}</span>
+          = <span class="rolltotal">{{ roll.total }}</span>
+          <span class="rolldetail">(
+          	{% ifequal roll.campaign.type "Champions" %}
+	         	{% ifequal roll.die_faces 6 %}
+	         		{% for die in roll.rolls %}
+			           	{% ifequal die 6 %}
+			           		<span class="die6">{{ die }}</span>
+			           	{% else %}{% ifequal die 1 %}
+			           		<span class="die1">{{ die }}</span>
+			           	{% else %}
+			           		<span class="dienormal">{{ die }}</span>
+			           	{% endifequal %}{% endifequal %}
+	        	  	{% endfor %}
+	            {% else %}
+	         		{% for die in roll.rolls %}
+	           		    <span class="dienormal">{{ die }}</span>
+	          	    {% endfor %}
+	            {% endifequal %}
+	        {% else %}
+         		{% for die in roll.rolls %}
+           		    <span class="dienormal">{{ die }}</span>
+          	    {% endfor %}
+	        {% endifequal %}
+	        )</span></div>
+    {% endfor %}
+        <div>
+            {% if prev %}
+            <a href="javascript:document.pagination.bookmark.value = '{{ prev }}'; document.pagination.submit()">Newer</a>
+            {% else %}
+            Newer
+            {% endif %}
+            {% if next %}
+            <a href="javascript:document.pagination.bookmark.value = '{{ next }}'; document.pagination.submit()">Older</a>
+            {% else %}
+            Older
+            {% endif %}
+        </div>
+{% endblock content %}

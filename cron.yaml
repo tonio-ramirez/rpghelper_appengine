@@ -1,0 +1,4 @@
+cron:
+- description: check for new messages and send notifications
+  url: /chat/send_notifications
+  schedule: every 5 minutes

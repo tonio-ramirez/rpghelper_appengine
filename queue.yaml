@@ -1,0 +1,5 @@
+queue:
+- name: client-notification
+  rate: 5/s
+- name: external-notification
+  rate: 5/s

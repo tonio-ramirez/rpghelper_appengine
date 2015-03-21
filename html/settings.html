@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock title %}
+{% block head %}
+<script type="text/javascript">
+google.load("jquery", "1");
+
+function OnLoad() {
+
+    if(window.webkitNotifications && window.webkitNotifications.checkPermission() == 1) {
+        $("#notification_permission").show();
+    } else {
+        $("#notification_permission").hide();
+    }
+
+    $("#notification_permission").click(function(event) {
+        window.webkitNotifications.requestPermission();
+    });
+}
+
+google.setOnLoadCallback(OnLoad);
+</script>
+{% endblock head %}
+{% block onload %}{% endblock onload %}
+{% block headername %}Settings - {{ user_nick }}{% endblock headername %}
+{% block content %}
+<form method="post" action="/settings/save">
+    <p><label>Nickname: <input type="text" name="nickname" value="{{ user_nick }}"/>
+    </label></p>
+    <p>Receive notifications for:<br/>
+    {% for campaign in campaigns %}
+        <input type="checkbox" name="campaigns" value="{{ campaign.key.id }}" {% if campaign.key in user_campaigns %}checked{% endif %}>
+        {{ campaign.name }}<br/>
+    {% endfor %}
+    </p>
+    <input type="submit" value="Save"/>
+</form>
+<button style="display:none;" id="notification_permission" value="Notifications">Notifications</button>
+{% endblock content %}

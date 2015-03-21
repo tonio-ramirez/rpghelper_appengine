@@ -1,0 +1,79 @@
+{% autoescape off %}
+<html itemscope itemtype="http://schema.org/Product">
+    <head>
+        <meta itemprop="name" content="RPG Helper">
+        <meta itemprop="description" content="RPG Helper, for all your online pen-and-paper roleplaying needs!">
+        <meta itemprop="image" content="http://rpghelper.appspot.com/images/rpghelper.png">
+        <link type="text/css" rel="stylesheet" href="/stylesheets/main.css"/>
+        <link id="favicon" rel="shortcut icon" type="image/icon" href="/images/favicon.ico"/>
+        <title>RPG Helper - {% block title %}Home{% endblock title %}</title>
+        <script src="https://www.google.com/jsapi?key=ABQIAAAADOb2abOlBzWDIq7ZQdwlQBTJVaIob-4fKoJzCoJaI1kR70JCOhRXCmzxIUXubTNVSnJrRlUTLy75_w"
+                type="text/javascript"></script>
+        <script type="text/javascript">
+            (function() {
+                var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+                po.src = 'https://apis.google.com/js/plusone.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+            })();
+            function plusOne(data) {
+                if(data['state'] == 'on') {
+                    // increment +1 count
+                } else if(data['state'] == 'off') {
+                    // decrement +1 count
+                }
+            }
+        </script>
+       {% block head %}{% endblock head %}
+    </head>
+    <body onload="{% block onload %}{% endblock onload %}">
+        <table id="nav">
+    		<tr>
+                <td style="text-align: left;">
+                    <form id="nav_select_campaign" action="/select_campaign" method="post" name="nav_campaignselect" style="height: 10px;">
+                        Current Campaign:
+                        <select name="campaign" size="1" onchange="document.nav_campaignselect.submit()" >
+                            <option value="" {% if campaign %}{% else %}SELECTED{% endif %}>None</option>
+
+                            {% for cmp in campaigns %}
+                        <option value="{{ cmp.key.id }}" {% ifequal campaign.key cmp.key %}SELECTED{% endifequal %}>{{ cmp.name }} ({{ cmp.type}})</option>
+                        {% endfor %}
+                    </select></form></td>
+                <td style="text-align: center;">
+                    <div class="g-plusone" data-size="medium" data-annotation="inline"
+                         data-href="http://rpghelper.appspot.com/" data-callback="plusOne"></div>
+                </td>
+                <td style="text-align: right;">
+                    <form id="select_timezone" action="/timezone" method="post" name="timezoneselect" style="height: 10px;">
+                        Current Timezone:
+                        <select name="timezone" size="1" onchange="document.timezoneselect.submit()" >
+                        {% for timezone in timezones %}
+                        <option value="{{ timezone }}" {% ifequal current_timezone timezone %}SELECTED{% endifequal %}>{{ timezone }}</option>
+                        {% endfor %}
+                    </select></form></td>
+    			<td style="text-align: right; width:7ex; height: 10px;"><a href="{{ url }}">{{ url_linktext }}</a></td>
+    		</tr>
+    	</table>
+    <div id="menu">
+    		<a href="/">Home</a><br/>
+    		<a href="/dice">Dice Roller</a><br/>
+    		<a href="/campaigns">Campaigns</a><br/>
+            <a href="/chat">Chat</a><br/>
+            <a href="/settings">Settings</a><br/>
+    		{% if admin %}<a href="/admin">Admin</a><br>{% endif %}
+    	</div>
+    	<div id="page">
+	    	<div id="header">
+	    		<div id="baseheader">RPG Helper</div>
+	    		<div id="headername">{% block headername %}{% endblock headername %}</div>
+	    	</div>
+			{% if error %}
+				<div id="page_error">{{ error }}</div>
+			{% endif %}
+			{% if message %}
+				<div id="page_message">{{ message }}</div>
+			{% endif %}
+			<div id="content">{% block content %}{% endblock content %}</div>
+		</div>
+    </body>
+</html>
+{% endautoescape %}

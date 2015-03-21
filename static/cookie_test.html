@@ -1,0 +1,50 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title></title>
+    <script src="https://www.google.com/jsapi?key=ABQIAAAADOb2abOlBzWDIq7ZQdwlQBTJVaIob-4fKoJzCoJaI1kR70JCOhRXCmzxIUXubTNVSnJrRlUTLy75_w"
+            type="text/javascript"></script>
+    <script type="text/javascript">
+    function setCookie(name, value, days) {
+        var expires;
+        if (days) {
+            var date = new Date();
+            if (days > 0) {
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            } else {
+                date.setTime(date.getTime() + (-days * 60 * 60 * 1000))
+            }
+            expires = "; expires=" + date.toGMTString();
+        }
+        else expires = "";
+        document.cookie = name + "=" + value + expires + "; path=/";
+    }
+
+    function getCookie(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        for (var i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return "";
+    }
+
+    function deleteCookie(name) {
+        setCookie(name, "", -1);
+    }
+    google.setOnLoadCallback(new function() {
+        setCookie("test_cookie", "hi!", 3);
+    });
+</script>
+</head>
+<body>
+    <form method="GET" action="/cookie_test">
+        <label for="val">Value:</label>
+        <input type="text" name="val" id="val"/>
+        <input type="submit" value="Submit"/>
+    </form>
+</body>
+</html>

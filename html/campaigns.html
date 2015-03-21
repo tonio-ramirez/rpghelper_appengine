@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Campaigns{% endblock title %}
+{% block head %}<script type="text/javascript">
+function showSelect() {
+	document.getElementById('select_campaign').style.display = 'block';
+	document.getElementById('create_campaign').style.display = 'none';
+
+	document.getElementById('select_tab').style.background = 'white';
+	document.getElementById('create_tab').style.background = '#CCCCCC';
+}
+
+function showCreate() {
+	document.getElementById('select_campaign').style.display = 'none';
+	document.getElementById('create_campaign').style.display = 'block';
+
+	document.getElementById('select_tab').style.background = '#CCCCCC';
+	document.getElementById('create_tab').style.background = 'white';
+}
+</script>{% endblock head %}
+{% block onload %}{% endblock onload %}
+{% block headername %}Campaigns{% endblock headername %}
+{% block content %}
+	<table cellspacing="0" cellpadding="2" style="width: 520px; border: 0">
+		<tr>
+			<td id="select_tab" style="text-align: center; width: 75px; background: white; border-left: groove 1px; border-top: groove 1px; border-right: groove 1px; border-bottom-width: 0" colspan="1">
+	<a href="javascript:showSelect()">Select</a></td>
+			<td id="create_tab" style="text-align: center; width: 75px; background: #CCCCCC; border-left: groove 1px; border-top: groove 1px; border-right: groove 1px; border-bottom-width: 0" colspan="1">
+	<a href="javascript:showCreate()">Create</a></td><td style="width: 350px" colspan="2"></td>
+		</tr>
+		<tr><td style="vertical-align: top; padding: 5px; height: 125px; width: 100%; background: white; border: groove 1px" colspan="4">
+	<form id="select_campaign" action="/campaigns/select" method="post" name="campaignselect">
+	Select your campaign: 
+	<select name="campaign" size="1" onchange="document.campaignselect.submit()">
+		<option value="" {% if selected_campaign %}{% else %}SELECTED{% endif %}>None</option>
+		{% for campaign in campaigns %}
+			<option value="{{ campaign.key.id }}" {% ifequal selected_campaign campaign.key.id %}SELECTED{% endifequal %}>{{ campaign.name }} ({{ campaign.type }})</option>
+		{% endfor %}
+	</select>
+	</form>
+	<form id="create_campaign" style="display: none" action="/campaigns/create" method="post">
+		Create a new campaign:
+		<table>
+			<tr>
+				<td>Name:</td><td><input type="text" name="name" style="width: 150px"></td>
+			</tr><tr>
+				<td>Type:</td><td><select name="type" size="1" style="width: 150px">
+					<option>Champions</option>
+					<option>D&amp;D</option>
+					<option>Boot Hill</option>
+				</select></td>
+			</tr><tr>
+				<td colspan="2" align="right"><input type="submit" value="Create"></td>
+			</tr>
+		</table>
+	</form>
+	</td></tr></table>
+{% endblock content %}

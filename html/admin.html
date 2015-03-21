@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Admin{% endblock %}
+{% block head %}
+{% endblock head %}
+{% block headername %}Admin{% endblock %}
+        {% block onload %}document.getElementById('search_term').focus();{% endblock %}
+{% block content %}
+<h3>Search Datastore</h3>
+<form action="/admin" method="get">
+    <label for="search_term">Query:</label> <input type="text" name="search_term" id="search_term" value="{{ search_term }}">
+    <input type="submit" value="Search">
+</form>
+<ul>
+    {% for chat_message in chat_messages %}
+    <li> {% if chat_message.user %}
+        {{ chat_message.user.nickname }}
+        {% else %}
+        Someone
+        {% endif %} -
+        {{ chat_message.message }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Map{% endblock %}
+{% block head %}
+<script type="text/javascript">
+    function moveDotLeft(obj) {
+		obj.style.left = getCurrentX(obj) - 1;
+	}
+
+	function moveDotRight(obj) {
+		obj.style.left = getCurrentX(obj) + 1;
+	}
+
+	function moveDotUp(obj) {
+		obj.style.top = getCurrentY(obj) - 1;
+	}
+
+	function moveDotDown(obj) {
+		obj.style.top = getCurrentY(obj) + 1;
+	}
+
+	function report(obj) {
+		alert('(' + getCurrentX(obj) + ', ' + getCurrentY(obj) + ')');
+	}
+
+	function getCurrentX(obj) {
+		if(obj.style.left)
+			return parseInt(obj.style.left);
+		else
+			return 0;
+	}
+
+	function getCurrentY(obj) {
+		if(obj.style.top)
+			return parseInt(obj.style.top);
+		else
+			return 0;
+	}
+</script>
+{% endblock head %}
+{% block headername %}Map{% endblock %}
+{% block content %}
+<table>
+<tr><td></td><td align="center"><input type="button" value="^" onclick="moveDotUp(document.getElementById('red_dot'))"></td><td></td></tr>
+<tr><td><input type="button" id="left" value="&lt;-" onclick="moveDotLeft(document.getElementById('red_dot'))"></td>
+<td><input type="button" id="show" value="Show" onclick="report(document.getElementById('red_dot'))"></td>
+<td><input type="button" id="right" value="-&gt;" onclick="moveDotRight(document.getElementById('red_dot'));"></td></tr>
+<tr><td></td><td align="center"><input type="button" value="v" onclick="moveDotDown(document.getElementById('red_dot'))"></td><td></td></tr>
+</table>
+<div id="map" style="width: 500px; height: 500px; background: url(/images/hex.png);">
+<img id="red_dot" src="/images/red_dot.png" style="z-index: 0; position: relative; ">
+</div>
+{% endblock %}

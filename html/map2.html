@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Map{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/themes/cupertino/jquery-ui.css"
+      type="text/css" media="all"/>
+<!--[if IE]><script type="text/javascript" src="/static/excanvas.compiled.js"></script><![endif]-->
+<script type="text/javascript">
+    google.load("jquery", "1");
+    google.load("jqueryui", "1");
+
+    var line_length = 25;
+
+    var vFact = Math.cos(30 * Math.PI / 180);
+    var hFact = Math.sin(30 * Math.PI / 180);
+    var canvasWidth = 1000;
+    var canvasHeight = 500;
+
+    function drawPiece(line_length, ctx, x, y) {
+        ctx.moveTo(x, y += vFact * line_length);
+        ctx.lineTo(x += hFact * line_length, y -= vFact * line_length);
+        ctx.lineTo(x += line_length, y);
+        ctx.lineTo(x += hFact * line_length, y += vFact * line_length);
+        ctx.lineTo(x += line_length, y);
+    }
+
+    function drawHex(line_length, ctx) {
+        ctx.beginPath();
+        var xOffset = 0;
+        for (var y = 0; y < canvasHeight; y += line_length * vFact) {
+            for (var x = 0; x < canvasWidth - xOffset; x += line_length * 2 + line_length * hFact * 2) {
+                drawPiece(line_length, ctx, x + xOffset, y);
+            }
+            if (xOffset == 0) {
+                xOffset = -line_length * (1 + hFact);
+            } else {
+                xOffset = 0;
+            }
+        }
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    function drawIcon(id, x, y, ctx) {
+        var img = $("#" + id)[0];
+        var scale;
+        if (img.width > img.height) {
+            scale = (line_length + 2 * hFact * line_length) / img.width;
+        } else {
+            scale = (2 * vFact * line_length) / img.height;
+        }
+        ctx.save();
+        ctx.scale(1.000001, 1.000001);
+        ctx.drawImage(img, x - img.width * scale * 0.5, y - img.height * scale * 0.5, img.width * scale, img.height * scale);
+        ctx.restore();
+    }
+
+    var icon_x = 0;
+    var icon_y = 0;
+
+    var DIR = {
+        N: "north",
+        S: "south",
+        NW: "northwest",
+        SW: "southwest",
+        NE: "northeast",
+        SE: "southeast"
+    };
+
+    function moveDot(direction) {
+        switch (direction) {
+            case DIR.N:
+                icon_y -= 1;
+                break;
+            case DIR.S:
+                icon_y += 1;
+                break;
+            case DIR.NW:
+                icon_x -= 0.5;
+                icon_y -= 0.5;
+                break;
+            case DIR.SW:
+                icon_x -= 0.5;
+                icon_y += 0.5;
+                break;
+            case DIR.NE:
+                icon_x += 0.5;
+                icon_y -= 0.5;
+                break;
+            case DIR.SE:
+                icon_x += 0.5;
+                icon_y += 0.5;
+                break;
+        }
+        paintCanvas();
+    }
+
+    function paintCanvas() {
+        var hStep = hFact * line_length * 2 + line_length * 2;
+        var hOffset = hFact * line_length + line_length * 0.5;
+        var vStep = vFact * line_length * 2;
+        var vOffset = vFact * line_length;
+        var ctx = $("#map")[0].getContext("2d");
+
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        drawHex(line_length, ctx);
+        var img = $("#dot")[0];
+        drawIcon("dot", icon_x * hStep + hOffset, icon_y * vStep + vOffset, ctx);
+    }
+    function OnLoad() {
+        paintCanvas();
+        $("#hex_size_slider").slider({
+            value: 25,
+            min: 10,
+            max: 50,
+            slide: function(event, ui) {
+                $("#hex_size").val(ui.value);
+                line_length = ui.value;
+                paintCanvas();
+            }
+        });
+        $(".movement").button();
+    }
+
+    google.setOnLoadCallback(OnLoad);
+</script>
+{% endblock head %}
+{% block headername %}Map{% endblock %}
+{% block content %}
+<table>
+    <tr style="height:45px;">
+        <td style="text-align:left;vertical-align:bottom;"><input class="movement" type="button" value="\" onclick="moveDot(DIR.NW)">
+        </td>
+        <td style="text-align:center;vertical-align:top;"><input class="movement" type="button" value="^" onclick="moveDot(DIR.N)"></td>
+        <td style="text-align:right;vertical-align:bottom;"><input class="movement" type="button" value="/" onclick="moveDot(DIR.NE)">
+        </td>
+    </tr>
+    <tr>
+        <td></td>
+        <td>Move</td>
+        <td>
+        </td>
+    </tr>
+    <tr style="height: 45px;">
+        <td style="text-align:left;vertical-align:top;"><input class="movement" type="button" value="/" onclick="moveDot(DIR.SW)"></td>
+        <td style="text-align:center;vertical-align:bottom;"><input class="movement" type="button" value="v" onclick="moveDot(DIR.S)">
+        </td>
+        <td style="text-align:right;vertical-align:top;"><input class="movement" type="button" value="\" onclick="moveDot(DIR.SE)"></td>
+    </tr>
+</table>
+<div style="height:30px;">
+    <div style="float:left; margin-right:10px;">
+        <label for="hex_size_slider">Hex Size</label>
+    </div>
+    <div id="hex_size_slider" style="width: 500px; float:left;">
+
+    </div>
+</div>
+<canvas id="map" style="background: #90ee90; position: relative; top: 0; left: 0;" width="1000" height="500">
+</canvas>
+<img src="/images/red_dot.png" id="dot" style="visibility:hidden;"/>
+<form>
+            <input type="hidden" id="hex_size" name="hex_size" value="25">
+        </form>
+{% endblock %}

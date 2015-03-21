@@ -1,0 +1,62 @@
+<html>
+<head>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+    <script type="text/javascript">
+        var tries;
+        var gmapsurl = null;
+        $(function () {
+            tries = 1;
+            $("#gmaps").button().click(function () {
+                if (gmapsurl) {
+                    window.open(gmapsurl,"gps_test_gmaps");
+                } else {
+                    alert("Can't see in Google Maps, error acquiring position.");
+                }
+                return false;
+            });
+            $("#gmaps").button("disable");
+            navigator.geolocation.watchPosition(showCoords, showError, {enableHighAccuracy:true, maximumAge:0});
+        });
+
+        function showCoords(position) {
+            $("#lat").html(position.coords.latitude);
+            $("#lng").html(position.coords.longitude);
+            $("#acc").html(position.coords.accuracy);
+            $("#pll").html(tries++);
+            $("#atm").html(new Date(position.timestamp / 1000).toLocaleString());
+            gmapsurl = "http://maps.google.com/?q=" + position.coords.latitude + "," + position.coords.longitude + "&z=18";
+            $("#gmaps").button("enable");
+        }
+
+        function showError(error) {
+            $("#lat").html("Error");
+            $("#lng").html("Error");
+            $("#acc").html("Error");
+            $("#pll").html(tries++);
+            $("#msg").html(error.message);
+            $("#gmaps").button("disable");
+            gmapsurl = null;
+        }
+    </script>
+</head>
+<body>
+<table cellpadding="20px">
+    <tr>
+        <th>Latitude</th>
+        <th>Longitude</th>
+        <th>Accuracy</th>
+        <th># of polls</th>
+        <th>Last acquire time</th>
+    </tr>
+    <tr>
+        <td id="lat"/>
+        <td id="lng"/>
+        <td id="acc"/>
+        <td id="pll"/>
+        <td id="atm"/>
+    </tr>
+</table>
+<button id="gmaps">See in Google Maps</button>
+</body>
+</html>

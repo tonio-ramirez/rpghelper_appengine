@@ -1,0 +1,12 @@
+{% autoescape off %}
+{% for chat_message in chat_messages %}
+<div class="rollmeta"><span class="timestamp">{{ chat_message.stamp|date:"Y-m-d h:i A" }}:</span>
+      	<span class="user">
+          {% if chat_message.user %}
+              {{ chat_message.user.nickname }}
+          {% else %}
+              Someone
+          {% endif %}</span></div>
+<div class="chatdata">{{ chat_message.message }}</div>
+{% endfor %}
+{% endautoescape %}

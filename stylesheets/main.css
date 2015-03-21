@@ -1,0 +1,115 @@
+body {
+    font-family: Verdana, Helvetica, sans-serif;
+    background-color: #DDDDDD;
+}
+
+#page_error {
+	color: red;
+	padding-bottom: 10px;
+}
+
+#page_message {
+	color: blue;
+	padding-bottom: 10px;
+}
+
+.error {
+    color: red;
+    font-weight: bold;
+}
+
+.rollmeta {
+	font-style: italic;
+}
+
+.user {
+	font-weight: bold;
+}
+
+.rolldata {
+	font-size: larger;
+	padding-left: 3ex;
+	padding-bottom: 20px;
+}
+
+.chatdata {
+    padding: 1px 1px 20px 20px;
+}
+
+.chatdata:hover {
+    background-color: #DDDDFF;
+    border: #dc143c 1px solid;
+    padding: 0 0 19px 19px;
+}
+
+.chatroll {
+    color: green;
+    border-bottom: 1px dotted;
+    font-weight: bold;
+}
+
+.chatrolldetail {
+    color: #a52a2a;
+    font-size: smaller;
+}
+
+.maxroll {
+    font-weight: bold;
+    text-align: center;
+}
+
+.minroll {
+    font-weight: bold;
+    text-align: center;
+}
+
+.die6 {
+	color: red;
+}
+
+.die1 {
+	color: blue;
+}
+
+.dienormal {
+}
+
+#nav {
+	font-size: small;
+	width: 100%;
+	padding-bottom: 5px;
+	background: #EEEEEE;
+}
+
+#header {
+	font-size: x-large;
+	padding-bottom: 30px;
+}
+
+#headername {
+	font-size: larger;
+	color: olive;
+}
+
+#menu {
+	border: inset 2px;
+	background: #CCCCCC;
+	padding: 5px 5px 0;
+	float: left;
+	font-size: smaller;
+	height: 100%;
+}
+
+#page {
+	margin-left: 100px;
+}
+
+.pseudolink {
+    cursor: pointer;
+    color: blue;
+    text-decoration: underline;
+}
+
+.waiting {
+    cursor: wait;
+}
