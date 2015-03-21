@@ -49,16 +49,12 @@ function validate(field, button) {
     setButtonEnabled(button, validMessage(field.value));
 }
 
-google.load("jquery", "1");
-google.load("jqueryui", "1");
-
 function checkForNewMessages() {
     $.get('/chat/check', function(pending) {
         if (pending == 'yes') {
             $("#favicon").attr("href", "/images/favicon_new.ico");
             setTimeout('checkForNewMessages()', 60000);
             $("#new_message_notification").show('fade', 2500);
-            reposition("#new_message_notification", "right bottom", "-10 -10");
         } else {
             $("#favicon").attr("href", "/images/favicon.ico");
             setTimeout('checkForNewMessages()', 5000);
@@ -71,20 +67,10 @@ function showReloadMessagesPanel(show) {
     if (show === undefined || show) {
         $("#favicon").attr("href", "/images/favicon_new.ico");
         $("#new_message_notification").show('fade', 2500);
-        reposition("#new_message_notification", "right bottom", "-10 -10");
     } else {
         $("#favicon").attr("href", "/images/favicon.ico");
         $("#new_message_notification").hide('fade', 2500);
     }
-}
-
-function reposition(selector, position, offset) {
-    $(selector).position({
-        my: position,
-        at: position,
-        offset: offset,
-        of: window
-    });
 }
 
 function requestNewChannel() {
@@ -334,13 +320,6 @@ function OnLoad() {
     validate($('#message').get(0), $('#postbutton').get(0));
 //        setTimeout('checkForNewMessages()', 5000);
 
-    function reposition_noti() {
-        reposition("#new_message_notification", "right bottom", "-10 -10");
-    }
-
-    $(window).scroll(reposition_noti);
-    $(window).resize(reposition_noti);
-
     $('#postbutton').click(function (event) {
         setButtonEnabled($('#postbutton').get(0), false);
         if ($('#message').val().length > 0) {
@@ -395,7 +374,7 @@ google.setOnLoadCallback(OnLoad);
     <p style="font-weight: bold;"><img src="/images/ajax-loader.gif"/> Loading...</p>
 </div>
 <div id="new_message_notification"
-     style="display: none; padding: 10px; position:absolute;width:300px; height:50px; background-color:#daa520;color:blue;border:1px blue dotted;">
+     style="display: none; padding: 10px; position:fixed; bottom: 0; right: 0; margin: 10px; width:300px; height:50px; background-color:#daa520;color:blue;border:1px blue dotted;">
     There are new messages!<br/>
     <a href="javascript:reloadChat(undefined); showReloadMessagesPanel(false);">Reload</a>
 </div>
