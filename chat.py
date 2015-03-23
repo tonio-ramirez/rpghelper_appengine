@@ -16,6 +16,7 @@ from google.appengine.api import xmpp
 from google.appengine.api import channel
 from google.appengine.api import prospective_search
 from google.appengine.api.channel.channel import InvalidChannelClientIdError
+from google.appengine.api import memcache
 from google.appengine.ext import db
 
 from rpghelper import default_values
@@ -132,7 +133,7 @@ class PostMessage(webapp.RequestHandler):
                                                                                                                '<br/>')
             msg.order_key = datetime.now().isoformat() + "|" + chat_order_key_gen(prefs)
             msg.put()
-            
+
             rolls = []
 
             for match in dicerollregexp.finditer(msg.message):
@@ -162,6 +163,13 @@ class PostMessage(webapp.RequestHandler):
                           method='GET',
                           queue_name='client-notification')
 
+            if memcache.add('notification_queued', True, time=5):
+                taskqueue.add(name='send_notifications',
+                              url='/chat/send_notifications',
+                              method='GET',
+                              queue_name='client-notification',
+                              countdown=5)
+
 #            taskqueue.add(url='/chat/notify_client',
 #                          params={'msg': json.dumps({'msg':msg})},
 #                          method='POST',
@@ -189,7 +197,7 @@ class NotifyClient(webapp.RequestHandler):
                     expired += 1
                     open_channel.delete()
         logging.info('Total channels: ' + str(total) + ', expired: ' + str(expired))
-        
+
     def post(self):
         notification = prospective_search.get_document(request=self.request)
         logging.info('Got a message from: ' + notification.user_nick + ' in: ' + str(notification.campaign_id))
@@ -292,6 +300,7 @@ class Check(webapp.RequestHandler):
 
 class CheckAndSendNotification(webapp.RequestHandler):
     def get(self):
+        memcache.delete('notification_queued')
         campaigns = Campaign.all()
         for campaign in campaigns:
             recipients = []
