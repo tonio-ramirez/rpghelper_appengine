@@ -163,12 +163,11 @@ class PostMessage(webapp.RequestHandler):
                           method='GET',
                           queue_name='client-notification')
 
-            if memcache.add('notification_queued', True, time=5):
-                taskqueue.add(name='send_notifications',
-                              url='/chat/send_notifications',
+            if memcache.add('notification_queued', True, time=15):
+                taskqueue.add(url='/chat/send_notifications',
                               method='GET',
                               queue_name='client-notification',
-                              countdown=5)
+                              countdown=15)
 
 #            taskqueue.add(url='/chat/notify_client',
 #                          params={'msg': json.dumps({'msg':msg})},
