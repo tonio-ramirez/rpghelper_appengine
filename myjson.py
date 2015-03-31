@@ -4,10 +4,10 @@ import time
 from google.appengine.api import users
 from google.appengine.ext import db
 
-#this is a mod on the orinal file for some reason it includes its own simplejson files i have ref django!
-from django.utils import simplejson
+import json
 
-class GqlEncoder(simplejson.JSONEncoder):
+
+class GqlEncoder(json.JSONEncoder):
     """Extends JSONEncoder to add support for GQL results and properties.
 
     Adds support to simplejson JSONEncoders for GQL results and properties by
@@ -55,7 +55,7 @@ class GqlEncoder(simplejson.JSONEncoder):
                 output[method] = getattr(obj, method)()
             return output
 
-        return simplejson.JSONEncoder.default(self, obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 def dumps(input):

@@ -1,7 +1,12 @@
 application: rpghelper-hrd
 version: 2
-runtime: python
+runtime: python27
 api_version: 1
+threadsafe: yes
+
+libraries:
+- name: django
+  version: "1.2"
 
 inbound_services:
 - xmpp_message
@@ -18,45 +23,45 @@ handlers:
   static_dir: stylesheets
  
 - url: /admin(/.*)?
-  script: rpghelper.py
+  script: rpghelper.application
   login: admin
 
 - url: /campaigns(/.*)?
-  script: campaigns.py
+  script: campaigns.application
   
 - url: /dice(/.*)?
-  script: diceroller.py
+  script: diceroller.application
 
 - url: /chat/notify
-  script: chat.py
+  script: chat.application
   login: admin
 
 - url: /chat/send_notifications
-  script: chat.py
+  script: chat.application
   login: admin
 
 - url: /chat/notify_client
-  script: chat.py
+  script: chat.application
   login: admin
 
 - url: /chat(/.*)?
-  script: chat.py
+  script: chat.application
 
 - url: /bb_test(/.*)?
-  script: bbtest.py
+  script: bbtest.application
   login: required
 
 - url: /map(/.*)?
-  script: map.py
+  script: map.application
 
 - url: /settings(/.*)?
-  script: settings.py
+  script: settings.application
 
 - url: /_ah/xmpp/message/chat/
-  script: xmpp.py
+  script: xmpp.application
 
 - url: /static
   static_dir: static
 
 - url: /.*
-  script: rpghelper.py
+  script: rpghelper.application

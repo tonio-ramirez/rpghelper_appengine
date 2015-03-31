@@ -3,13 +3,9 @@ import os
 import re
 import logging
 
-import google
-google.appengine.dist.use_library(name='django', version='1.2')
-
 from google.appengine.api import mail, users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.api.taskqueue import taskqueue
 from google.appengine.api import xmpp
@@ -27,6 +23,7 @@ from datetime import datetime, timedelta
 import datamodel
 import myjson as json
 
+
 class Chat(webapp.RequestHandler):
     @login_required
     def get(self):
@@ -35,11 +32,6 @@ class Chat(webapp.RequestHandler):
             ckeyname = self.request.get('campaign')
             prefs.campaign = Campaign.get_by_id(int(ckeyname))
             datamodel.subscribe_to_campaign(user_prefs=prefs,campaign=prefs.campaign)
-#            if prefs.campaign and prefs.campaign.key() not in prefs.notification_campaigns:
-#                prefs.notification_campaigns.append(prefs.campaign.key())
-#            prospective_search.subscribe(datamodel.ChatMessageNotification,
-#                                         'campaign_id == ' + ckeyname,
-#                                         ckeyname)
             prefs.put()
             self.redirect('/chat')
         else:
@@ -53,7 +45,6 @@ class Chat(webapp.RequestHandler):
             else:
                 campaign_name = prefs.campaign.name
                 campaign_type = prefs.campaign.type
-
 
             template_values.update({
                                        'campaign_type': campaign_type,
@@ -112,18 +103,18 @@ class ChatMessages(webapp.RequestHandler):
         }
         self.response.out.write(json.dumps(input=resp))
 
-maxminregexp = re.compile(
+max_min_regexp = re.compile(
         r'\[<span class="chatroll">(?P<total>\d+)</span> \(<span class="chatrolldetail">(?P<number>\d+)(?P<half>\.5)?d(?P<faces>\d+)(?P<adder>(?:\+|-)\d+)?:')
 
-dicerollregexp = re.compile(r'\[[^][]+\]')
+dice_roll_regexp = re.compile(r'\[[^][]+\]')
 
 class PostMessage(webapp.RequestHandler):
     def post(self):
         if not self.request.get('message'):
             self.response.out.write(json.dumps(input={'success':False}))
         else:
-            global maxminregexp
-            global dicerollregexp
+            global max_min_regexp
+            global dice_roll_regexp
 
             prefs = get_user_prefs()
 
@@ -136,7 +127,7 @@ class PostMessage(webapp.RequestHandler):
 
             rolls = []
 
-            for match in dicerollregexp.finditer(msg.message):
+            for match in dice_roll_regexp.finditer(msg.message):
                 roll = roll_dice(match.group(0)[1:-1], 'see chat', msg.campaign, prefs, parent=msg)
                 if isinstance(roll, DiceRoll):
                     roll.match_start = match.start()
@@ -156,8 +147,6 @@ class PostMessage(webapp.RequestHandler):
             notification.campaign_id = msg.campaign.key().id()
             notification.user_nick = msg.user.nickname()
 
-#            prospective_search.match(document=notification,result_relative_url='/chat/notify_client', result_task_queue='client-notification')
-
             taskqueue.add(url='/chat/notify_client',
                           params={'campaign': msg.campaign.key().id(), 'user': users.get_current_user().nickname()},
                           method='GET',
@@ -169,12 +158,8 @@ class PostMessage(webapp.RequestHandler):
                               queue_name='client-notification',
                               countdown=15)
 
-#            taskqueue.add(url='/chat/notify_client',
-#                          params={'msg': json.dumps({'msg':msg})},
-#                          method='POST',
-#                          queue_name='client-notification')
-
             self.response.out.write(json.dumps(input={'success':True}))
+
 
 class NotifyClient(webapp.RequestHandler):
     def get(self):
@@ -200,9 +185,6 @@ class NotifyClient(webapp.RequestHandler):
     def post(self):
         notification = prospective_search.get_document(request=self.request)
         logging.info('Got a message from: ' + notification.user_nick + ' in: ' + str(notification.campaign_id))
-#        campaign = Campaign.get_by_id(int(self.request.get('campaign')))
-#        user_nick = self.request.get('user')
-#        msg = simplejson.loads(self.request.get('msg'))['msg']
         open_channels = OpenChannel.all().filter('campaign =',Campaign.get_by_id(int(notification.campaign_id)))
         now = datetime.now()
         total = 0
@@ -220,11 +202,13 @@ class NotifyClient(webapp.RequestHandler):
                     open_channel.delete()
         logging.info('Total channels: ' + str(total) + ', expired: ' + str(expired))
 
+
 def calc_max(number, half, faces, adder):
     tmp = number * faces + adder
     if half:
         tmp += faces / 2
     return max(tmp, 1)
+
 
 def calc_min(number, half, adder):
     return max(number + (1 if half else 0) + adder, 1)
@@ -274,6 +258,7 @@ Email recipients: %s
             mail.send_mail(self.NOTIFICATION_EMAIL_ADDRESS, email_recipients, self.NOTIFICATION_SUBJECT,
                            self.NOTIFICATION_MESSAGE % (campaign.name,campaign.key().id()))
 
+
 class Check(webapp.RequestHandler):
     def get(self):
         prefs = get_user_prefs()
@@ -297,6 +282,7 @@ class Check(webapp.RequestHandler):
         else:
             self.response.out.write('no')
 
+
 class CheckAndSendNotification(webapp.RequestHandler):
     def get(self):
         memcache.delete('notification_queued')
@@ -306,7 +292,6 @@ class CheckAndSendNotification(webapp.RequestHandler):
             last_message = ChatMessage.all().filter('campaign =', campaign).order('-order_key').get()
             if last_message:
                 user_prefs = [subs.parent() for subs in datamodel.CampaignSubscription.all().filter('campaign =', campaign).filter('subscribed =', True)]
-#                user_prefs = UserPrefs.all().filter('user !=', None).filter('notification_campaigns =', campaign)
                 to_save = []
                 for user_pref in user_prefs:
                     if user_pref.user:
@@ -329,13 +314,13 @@ class CheckAndSendNotification(webapp.RequestHandler):
                             put = True
                         if put:
                             to_save.append(user_pref)
-#                        user_pref.put()
                 db.put(to_save)
                 if recipients:
                     taskqueue.add(url='/chat/notify',
                                   params={'recipients': recipients, 'campaign': campaign.key().id()},
                                   method='POST',
                                   queue_name='external-notification')
+
 
 class NewToken(webapp.RequestHandler):
     @login_required
@@ -367,6 +352,7 @@ class NewToken(webapp.RequestHandler):
                 self.response.out.write(json.dumps(input={"error":"Campaign not found"}))
         else:
             self.response.out.write(json.dumps(input={"error":"Campaign ID not sent!"}))
+
 
 class ValidateClientId(webapp.RequestHandler):
     def get(self):
@@ -401,9 +387,3 @@ application = webapp.WSGIApplication(
          ('/chat/notify_client', NotifyClient),
          ('/chat/send_notifications', CheckAndSendNotification)],
         debug=True)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()

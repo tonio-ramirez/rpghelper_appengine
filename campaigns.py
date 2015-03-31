@@ -1,18 +1,14 @@
 import os
 
-from google.appengine.dist import use_library
-use_library('django', '1.2')
-
 from google.appengine.api import users
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.ext.webapp.util import login_required
-from google.appengine.api import prospective_search
 
 import datamodel
 import rpghelper
 from datamodel import Campaign
+
 
 class Campaigns(webapp.RequestHandler):
     @login_required
@@ -53,6 +49,7 @@ class Campaigns(webapp.RequestHandler):
         path = os.path.join(os.path.dirname(__file__), 'html', 'campaigns.html')
         self.response.out.write(template.render(path, template_values))
 
+
 class CreateCampaign(webapp.RequestHandler):
     def post(self):
         
@@ -72,6 +69,7 @@ class CreateCampaign(webapp.RequestHandler):
             
             self.redirect('/campaigns?m=1')
             
+
 class SelectCampaign(webapp.RequestHandler):
     def post(self):
         
@@ -83,11 +81,6 @@ class SelectCampaign(webapp.RequestHandler):
         if len(ckeyname) > 0:
             prefs.campaign = Campaign.get_by_id(int(ckeyname))
             datamodel.subscribe_to_campaign(prefs,prefs.campaign)
-#            if prefs.campaign not in prefs.notification_campaigns:
-#                prefs.notification_campaigns.append(prefs.campaign.key())
-#            prospective_search.subscribe(datamodel.ChatMessageNotification,
-#                                         'campaign_id == ' + ckeyname,
-#                                         ckeyname)
         else:
             prefs.campaign = None
         prefs.put()
@@ -99,9 +92,3 @@ application = webapp.WSGIApplication(
      ('/campaigns/create', CreateCampaign),
      ('/campaigns/select', SelectCampaign)],
     debug=True)
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()

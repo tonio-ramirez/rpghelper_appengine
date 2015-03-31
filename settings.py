@@ -1,8 +1,5 @@
 import os
 
-from google.appengine.dist import use_library
-use_library('django', '1.2')
-
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -12,6 +9,7 @@ from google.appengine.ext import db
 from rpghelper import default_values
 from datamodel import Campaign, CampaignSubscription
 from datamodel import get_user_prefs
+
 
 class Settings(webapp.RequestHandler):
     @login_required
@@ -43,14 +41,14 @@ class Settings(webapp.RequestHandler):
 
         selected_campaigns = self.request.get_all('campaigns')
         #        prefs.notification_campaigns = selected_campaigns
-        currentSubscriptions = CampaignSubscription.all().ancestor(prefs)
-        for subscription in currentSubscriptions:
+        current_subscriptions = CampaignSubscription.all().ancestor(prefs)
+        for subscription in current_subscriptions:
             ckeyname = str(subscription.campaign.key().id())
             subscription.subscribed = ckeyname in selected_campaigns
             to_save.append(subscription)
             if ckeyname in selected_campaigns:
                 selected_campaigns.remove(ckeyname)
-            #        db.delete(currentSubscriptions)
+            #        db.delete(current_subscriptions)
         for ckeyname in selected_campaigns:
             subscription = CampaignSubscription(parent=prefs.key())
             subscription.campaign = Campaign.get_by_id(int(ckeyname))
@@ -64,9 +62,3 @@ application = webapp.WSGIApplication(
         debug=True)
 
 webapp.template.register_template_library('templatetags.smart_if')
-
-def main():
-    run_wsgi_app(application)
-
-if __name__ == "__main__":
-    main()
