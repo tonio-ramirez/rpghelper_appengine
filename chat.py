@@ -10,13 +10,12 @@ from google.appengine.ext.webapp.util import login_required
 from google.appengine.api.taskqueue import taskqueue
 from google.appengine.api import xmpp
 from google.appengine.api import channel
-from google.appengine.api import prospective_search
 from google.appengine.api.channel.channel import InvalidChannelClientIdError
 from google.appengine.api import memcache
 from google.appengine.ext import db
 
 from rpghelper import default_values
-from datamodel import ChatMessage, chat_order_key_gen, DiceRoll, UserPrefs, Campaign, OpenChannel
+from datamodel import ChatMessage, chat_order_key_gen, DiceRoll, Campaign, OpenChannel
 from datamodel import get_user_prefs
 from diceroller import roll_dice
 from datetime import datetime, timedelta
@@ -53,6 +52,7 @@ class Chat(webapp.RequestHandler):
                                        })
             path = os.path.join(os.path.dirname(p=__file__), 'html', 'chat.html')
             self.response.out.write(template.render(path, template_values))
+
 
 class ChatMessages(webapp.RequestHandler):
     PAGESIZE = 10
@@ -108,6 +108,7 @@ max_min_regexp = re.compile(
 
 dice_roll_regexp = re.compile(r'\[[^][]+\]')
 
+
 class PostMessage(webapp.RequestHandler):
     def post(self):
         if not self.request.get('message'):
@@ -135,17 +136,6 @@ class PostMessage(webapp.RequestHandler):
                     rolls.append(roll)
 
             db.put(rolls)
-
-            subs = prospective_search.list_subscriptions(datamodel.ChatMessageNotification)
-            logging.info('State: OK: ' + str(prospective_search.SubscriptionState.OK))
-            logging.info('State: PENDING: ' + str(prospective_search.SubscriptionState.PENDING))
-            logging.info('State: ERROR: ' + str(prospective_search.SubscriptionState.ERROR))
-            for sub in subs:
-                logging.info('Subscription: ' +sub[0] + ', query: '+sub[1] + ', state: ' + str(sub[3]))
-
-            notification = datamodel.ChatMessageNotification()
-            notification.campaign_id = msg.campaign.key().id()
-            notification.user_nick = msg.user.nickname()
 
             taskqueue.add(url='/chat/notify_client',
                           params={'campaign': msg.campaign.key().id(), 'user': users.get_current_user().nickname()},
@@ -177,26 +167,6 @@ class NotifyClient(webapp.RequestHandler):
                 try:
                     channel.send_message(client_id=open_channel.clientId, message=json.dumps(
                                 input={"new_messages": True, "from": self.request.get('user')}))
-                except InvalidChannelClientIdError:
-                    expired += 1
-                    open_channel.delete()
-        logging.info('Total channels: ' + str(total) + ', expired: ' + str(expired))
-
-    def post(self):
-        notification = prospective_search.get_document(request=self.request)
-        logging.info('Got a message from: ' + notification.user_nick + ' in: ' + str(notification.campaign_id))
-        open_channels = OpenChannel.all().filter('campaign =',Campaign.get_by_id(int(notification.campaign_id)))
-        now = datetime.now()
-        total = 0
-        expired = 0
-        for open_channel in open_channels:
-            total += 1
-            if open_channel.expiration < now or not open_channel.clientId:
-                expired += 1
-                open_channel.delete()
-            else:
-                try:
-                    channel.send_message(client_id=open_channel.clientId, message=json.dumps(input={"new_messages":True, "from":notification.user_nick}))
                 except InvalidChannelClientIdError:
                     expired += 1
                     open_channel.delete()
